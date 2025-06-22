@@ -6,11 +6,13 @@ import SwiftUI
   var hasPermissions = false
   var showAlert = false
   var interceptedKeysCount = 0
-  var lastKeyPressed = ""
+  var lastKey: String = ""
+  var lastModifiers: [String] = []
 
   private var eventTap: CFMachPort?
   private var runLoopSource: CFRunLoopSource?
   private var permissionsCheckTimer: Timer?
+  private var clearKeyTimer: Timer?
 
   init() {
     startPermissionsCheckLoop()
@@ -131,7 +133,15 @@ import SwiftUI
         self.interceptedKeysCount += 1
         let key = keyString(for: keyCode)
         let modifiers = modifierString(for: event.flags)
-        self.lastKeyPressed = "Key: \(key), Modifiers: \(modifiers)"
+        self.lastKey = key
+        self.lastModifiers = modifiers == "None" ? [] : modifiers.components(separatedBy: "+")
+        
+        self.clearKeyTimer?.invalidate()
+        self.clearKeyTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+          self.lastKey = ""
+          self.lastModifiers = []
+          self.clearKeyTimer = nil
+        }
       }
     }
 
@@ -139,6 +149,7 @@ import SwiftUI
   }
 
   deinit {
+    clearKeyTimer?.invalidate()
     stopPermissionsCheckLoop()
     stopSuppressing()
   }
@@ -170,35 +181,35 @@ private func keyString(for keyCode: Int64) -> String {
   case 21: return "4"
   case 22: return "6"
   case 23: return "5"
-  case 24: return "Equal (=)"
+  case 24: return "="
   case 25: return "9"
   case 26: return "7"
-  case 27: return "Minus (-)"
+  case 27: return "-"
   case 28: return "8"
   case 29: return "0"
-  case 30: return "Right Bracket (])"
+  case 30: return "]"
   case 31: return "O"
   case 32: return "U"
-  case 33: return "Left Bracket ([)"
+  case 33: return "["
   case 34: return "I"
   case 35: return "P"
   case 36: return "Return"
   case 37: return "L"
   case 38: return "J"
-  case 39: return "Quote ('')"
+  case 39: return "'"
   case 40: return "K"
-  case 41: return "Semicolon (;)"
-  case 42: return "Backslash (\\)"
-  case 43: return "Comma (,)"
-  case 44: return "Slash (/)"
+  case 41: return ";"
+  case 42: return "\\"
+  case 43: return ","
+  case 44: return "/"
   case 45: return "N"
   case 46: return "M"
-  case 47: return "Period (.)"
+  case 47: return "."
   case 48: return "Tab"
   case 49: return "Space"
-  case 50: return "Grave (`)"
+  case 50: return "`"
   case 51: return "Delete"
-  case 52: return "Enter (Numpad)"
+  case 52: return "Enter"
   case 53: return "Escape"
   case 54: return "Right Command"
   case 55: return "Left Command"
@@ -209,18 +220,18 @@ private func keyString(for keyCode: Int64) -> String {
   case 60: return "Right Shift"
   case 61: return "Right Option"
   case 62: return "Right Control"
-  case 63: return "Function (Fn)"
+  case 63: return "Fn"
   case 64: return "F17"
-  case 65: return "Keypad Decimal"
-  case 66: return "Keypad Multiply"
-  case 67: return "Keypad Plus"
-  case 68: return "Keypad Clear"
-  case 69: return "Keypad Divide"
-  case 70: return "Keypad Enter"
-  case 71: return "Keypad Minus"
+  case 65: return "."
+  case 66: return "*"
+  case 67: return "+"
+  case 68: return "Clear"
+  case 69: return "/"
+  case 70: return "Enter"
+  case 71: return "-"
   case 72: return "F18"
   case 73: return "F19"
-  case 74: return "Keypad Equal"
+  case 74: return "="
   case 75: return "Keypad 0"
   case 76: return "Keypad 1"
   case 77: return "Keypad 2"

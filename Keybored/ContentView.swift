@@ -1,5 +1,5 @@
-import AppKit
 import SwiftUI
+
 
 struct ContentView: View {
   @State private var controller = Controller()
@@ -11,13 +11,9 @@ struct ContentView: View {
         .ignoresSafeArea()
 
       VStack(spacing: 20) {
-        Text("Has Permissions: \(controller.hasPermissions ? "✅" : "❌")")
-        Text(
-          controller.isActive
-            ? "Keyboard is Locked 🔒" : "Keyboard is Unlocked 🔓"
-        )
-        Text(
-          "Last Pressed Key: \(controller.lastKeyPressed)"
+        KeyPreview(
+          lastKey: $controller.lastKey,
+          modifiers: $controller.lastModifiers
         )
 
         Button("Lock Keyboard") {
