@@ -1,35 +1,59 @@
+import AppKit
 import SwiftUI
 
 @Observable class Controller {
   var isActive = false
   var hasPermissions = false
+  var showAlert = false
   var interceptedKeysCount = 0
   var lastKeyPressed = ""
 
   private var eventTap: CFMachPort?
   private var runLoopSource: CFRunLoopSource?
+  private var permissionsCheckTimer: Timer?
 
   init() {
-    checkPermissions()
+    startPermissionsCheckLoop()
   }
-
-  func checkPermissions() {
-    hasPermissions = AXIsProcessTrusted()
+  
+  func openAccessibilitySettings() {
+    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+      NSWorkspace.shared.open(url)
+    }
   }
 
   func requestPermissions() {
     print("Triggering accessibility permission prompt...")
     let options =
       [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
-    let trusted = AXIsProcessTrustedWithOptions(options)
+    AXIsProcessTrustedWithOptions(options)
+  }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-      self.hasPermissions = trusted
+  func startPermissionsCheckLoop() {
+    permissionsCheckTimer?.invalidate()
+    permissionsCheckTimer = Timer.scheduledTimer(
+      withTimeInterval: 1.0,
+      repeats: true
+    ) { [weak self] _ in
+      guard let self = self else { return }
+      let trusted = AXIsProcessTrusted()
+      if self.hasPermissions != trusted {
+        self.hasPermissions = trusted
+        if !trusted {
+          self.stopSuppressing()
+        }
+      }
     }
+  }
+
+  func stopPermissionsCheckLoop() {
+    permissionsCheckTimer?.invalidate()
+    permissionsCheckTimer = nil
   }
 
   func startSuppressing() {
     guard hasPermissions else {
+      showAlert = true
       print("No accessibility permissions")
       return
     }
@@ -115,6 +139,7 @@ import SwiftUI
   }
 
   deinit {
+    stopPermissionsCheckLoop()
     stopSuppressing()
   }
 }
